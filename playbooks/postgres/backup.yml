@@ -26,7 +26,7 @@
         var: upload_output.stdout
 
     - name: Delete old backups
-      ansible.builtin.shell: "python3 ~/dropbox_script.py list | grep \"pg-backup.*$\" | sort | head -n -20 | xargs -r python3 ~/dropbox_script.py delete"
+      ansible.builtin.shell: "python3 ~/dropbox_script.py list | grep \"pg-backup.*$\" | sort | head -n -200 | xargs -r python3 ~/dropbox_script.py delete"
       register: delete_output
       environment:
         DROPBOX_APP_KEY: "{{dropbox_pg_backuper_app_key}}"
