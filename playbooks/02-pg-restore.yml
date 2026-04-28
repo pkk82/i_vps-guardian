@@ -1,0 +1,3 @@
+- import_playbook: "{{playbook_dir}}/postgres/init-python.yml"
+- import_playbook: "{{playbook_dir}}/postgres/init-postgres.yml"
+- import_playbook: "{{playbook_dir}}/postgres/restore.yml"
