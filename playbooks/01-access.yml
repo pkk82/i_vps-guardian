@@ -29,9 +29,9 @@
       state: present
       key: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCy5TiSXRIg2U5k+msqs73abEFfs+SmtroeJIiJx9TdhwhU2VsWw7F9iRdGctPhhUm/9+KB07ciGlTSAXvB4y9HtokaZu00sc90ou1xHsiC1sCza8SNq7+SLL25ipGassR4ZhcjuX2z3vmSRdl+lDt7FOecBeZ/ZiAxlv9c1tfTQOfmQ19lrwlDJ3JUhiC2OVsJLgkcMHWTFFLKdYwpDxZHafEU0wlq88R3bkf8JlCp1bBMlcNMcgaAHxdzR5weV0BSW+1O0WxkElLQdrrwBXsQ8dvlhB2ZD4gYpXZPZsWMgNnKJyCkNLqFyNPa2BKF5KgKGCN8ulBvx835dwp5Jidt pkk82@d2018-linux
 
-  - name: Add authorized key for pkk82 account (pk@l2026-mac)
+  - name: Add authorized key for pkk82 account (pkk@l2026-mac)
     authorized_key:
-      user: pkk
+      user: pkk82
       state: present
       key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGFEF6pojujUn+Sg8C5CR3OpowIeQ3bz6IN9tUPQizS6 pkk@l2026-mac
 
