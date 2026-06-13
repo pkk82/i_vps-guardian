@@ -14,6 +14,13 @@
       args:
         executable: /bin/bash
 
+    - name: Verify backup ends with pg_dumpall completion marker
+      shell: |
+        set -o pipefail
+        gunzip -c {{pg_backup_filename}} | tail -n 5 | grep -q "PostgreSQL database cluster dump complete"
+      args:
+        executable: /bin/bash
+
     - name: Calculate checksum of backup
       shell: "sha512sum {{pg_backup_filename}} > {{pg_backup_filename}}.sha512"
 
