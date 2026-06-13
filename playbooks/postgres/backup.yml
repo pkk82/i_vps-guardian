@@ -8,7 +8,11 @@
   tasks:
 
     - name: Backup Postgresql
-      shell: "pg_dumpall | gzip > {{pg_backup_filename}}"
+      shell: |
+        set -o pipefail
+        pg_dumpall | gzip > {{pg_backup_filename}}
+      args:
+        executable: /bin/bash
 
     - name: Calculate checksum of backup
       shell: "sha512sum {{pg_backup_filename}} > {{pg_backup_filename}}.sha512"
