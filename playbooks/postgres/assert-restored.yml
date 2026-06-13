@@ -1,0 +1,37 @@
+---
+- hosts: remotes
+  remote_user: "{{ansible_ssh_user}}"
+  become: true
+  become_user: postgres
+  gather_facts: no
+  tasks:
+
+    - name: Count expected primary keys in the dump
+      ansible.builtin.shell: |
+        find {{pg_backup_output_dir}} -type f | grep "pg-backup.*.gz$" | sort | tail -n 1 \
+          | xargs gunzip -c | grep -c "ADD CONSTRAINT.*PRIMARY KEY" || true
+      args:
+        executable: /bin/bash
+      register: expected_pks
+      changed_when: false
+
+    - name: Count primary keys present in the cluster
+      ansible.builtin.shell: |
+        psql -tAc "SELECT datname FROM pg_database WHERE datistemplate = false" \
+          | while read db; do
+              psql -d "$db" -tAc \
+                "SELECT count(*) FROM pg_constraint WHERE contype = 'p'"
+            done \
+          | awk '{s+=$1} END {print s+0}'
+      args:
+        executable: /bin/bash
+      register: actual_pks
+      changed_when: false
+
+    - name: Fail if restored cluster has fewer primary keys than the dump
+      ansible.builtin.fail:
+        msg: >-
+          Restored cluster has {{ actual_pks.stdout | trim }} primary key
+          constraints but the dump declared {{ expected_pks.stdout | trim }}.
+          Restore likely failed to apply the trailing ADD CONSTRAINT section.
+      when: (actual_pks.stdout | trim | int) < (expected_pks.stdout | trim | int)
