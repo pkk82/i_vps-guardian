@@ -37,4 +37,8 @@
       ansible.builtin.shell: "find {{pg_backup_output_dir}} -type f | grep \"pg-backup.*.sha512$\" | sort | tail -n 1 | xargs sha512sum -c"
 
     - name: Restore Postgresql data
-      ansible.builtin.shell: "find {{pg_backup_output_dir}} -type f | grep \"pg-backup.*.gz$\" | sort | tail -n 1 | xargs gunzip -c | psql"
+      ansible.builtin.shell: |
+        set -o pipefail
+        find {{pg_backup_output_dir}} -type f | grep "pg-backup.*.gz$" | sort | tail -n 1 | xargs gunzip -c | psql -v ON_ERROR_STOP=1
+      args:
+        executable: /bin/bash
