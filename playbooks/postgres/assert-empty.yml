@@ -1,0 +1,30 @@
+---
+- hosts: remotes
+  remote_user: "{{ansible_ssh_user}}"
+  become: true
+  become_user: postgres
+  gather_facts: no
+  tasks:
+
+    - name: Count user tables across non-template databases
+      ansible.builtin.shell: |
+        set -o pipefail
+        psql -tAc "SELECT datname FROM pg_database WHERE datistemplate = false" \
+          | while read db; do
+              psql -d "$db" -tAc \
+                "SELECT count(*) FROM pg_tables WHERE schemaname NOT IN ('pg_catalog', 'information_schema')"
+            done \
+          | awk '{s+=$1} END {print s+0}'
+      args:
+        executable: /bin/bash
+      register: user_table_count
+      changed_when: false
+
+    - name: Refuse to restore into a populated cluster
+      ansible.builtin.fail:
+        msg: >-
+          Cluster already contains {{ user_table_count.stdout | trim }} user tables.
+          Restoring on top would duplicate rows and silently break PK constraints.
+          Run 02-pg-reinstall.yml instead, or drop the user databases manually
+          before re-running this playbook.
+      when: (user_table_count.stdout | trim | int) > 0
