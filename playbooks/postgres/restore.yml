@@ -39,6 +39,9 @@
     - name: Restore Postgresql data
       ansible.builtin.shell: |
         set -o pipefail
-        find {{pg_backup_output_dir}} -type f | grep "pg-backup.*.gz$" | sort | tail -n 1 | xargs gunzip -c | psql -v ON_ERROR_STOP=1
+        find {{pg_backup_output_dir}} -type f | grep "pg-backup.*.gz$" | sort | tail -n 1 \
+          | xargs gunzip -c \
+          | sed -E '/^CREATE ROLE "?postgres"?;$/d' \
+          | psql -v ON_ERROR_STOP=1
       args:
         executable: /bin/bash
