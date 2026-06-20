@@ -21,8 +21,37 @@
       become: true
       become_user: root
 
-    - name: Download latest backups
-      ansible.builtin.shell: "python3 ~/dropbox_script.py list | grep \"pg-backup.*$\" | sort | tail -n 2 | xargs python3 ~/dropbox_script.py download {{pg_backup_output_dir}}"
+    # When invoked from 02-pg-reinstall.yml, pg_reinstall_backup_basename was set
+    # by the backup play earlier in this same run, so we restore exactly that
+    # file. Standalone restores (02-pg-restore.yml / 02-pg-wipe-restore.yml) leave
+    # it undefined and fall back to the latest backup in Dropbox.
+    - name: Determine which backup to restore
+      ansible.builtin.shell: |
+        set -o pipefail
+        if [ -n "{{ pg_reinstall_backup_basename | default('') }}" ]; then
+          echo "{{ pg_reinstall_backup_basename }}"
+        else
+          python3 ~/dropbox_script.py list | grep "pg-backup.*\.gz$" | sort | tail -n 1
+        fi
+      args:
+        executable: /bin/bash
+      register: restore_target
+      environment:
+        DROPBOX_APP_KEY: "{{dropbox_pg_backuper_app_key}}"
+        DROPBOX_APP_SECRET: "{{dropbox_pg_backuper_app_secret}}"
+        DROPBOX_REFRESH_TOKEN: "{{dropbox_pg_backuper_refresh_token}}"
+
+    - name: Fail if no backup could be selected
+      ansible.builtin.fail:
+        msg: "No backup file could be determined for restore."
+      when: (restore_target.stdout | trim) == ""
+
+    - name: Set backup filename to restore
+      ansible.builtin.set_fact:
+        restore_basename: "{{ restore_target.stdout | trim }}"
+
+    - name: Download the selected backup and its checksum
+      ansible.builtin.shell: "python3 ~/dropbox_script.py download {{pg_backup_output_dir}} {{restore_basename}} {{restore_basename}}.sha512"
       register: download_output
       environment:
         DROPBOX_APP_KEY: "{{dropbox_pg_backuper_app_key}}"
@@ -34,13 +63,12 @@
         var: download_output.stdout
 
     - name: Check signature
-      ansible.builtin.shell: "find {{pg_backup_output_dir}} -type f | grep \"pg-backup.*.sha512$\" | sort | tail -n 1 | xargs sha512sum -c"
+      ansible.builtin.shell: "sha512sum -c {{pg_backup_output_dir}}/{{restore_basename}}.sha512"
 
     - name: Restore Postgresql data
       ansible.builtin.shell: |
         set -o pipefail
-        find {{pg_backup_output_dir}} -type f | grep "pg-backup.*.gz$" | sort | tail -n 1 \
-          | xargs gunzip -c \
+        gunzip -c {{pg_backup_output_dir}}/{{restore_basename}} \
           | sed -E '/^CREATE ROLE "?postgres"?;$/d' \
           | psql -v ON_ERROR_STOP=1
       args:

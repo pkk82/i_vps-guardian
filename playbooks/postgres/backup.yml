@@ -36,6 +36,13 @@
       ansible.builtin.debug:
         var: upload_output.stdout
 
+    # Pin a same-run restore (e.g. 02-pg-reinstall.yml) to exactly this backup,
+    # so the later restore step cannot pick up a different "latest" backup that
+    # another run uploaded in between. Standalone restores don't see this fact.
+    - name: Record this backup's filename for a same-run restore
+      ansible.builtin.set_fact:
+        pg_reinstall_backup_basename: "{{ pg_backup_filename | basename }}"
+
     - name: Delete old backups
       ansible.builtin.shell: "python3 ~/dropbox_script.py list | grep \"pg-backup.*$\" | sort | head -n -200 | xargs -r python3 ~/dropbox_script.py delete"
       register: delete_output

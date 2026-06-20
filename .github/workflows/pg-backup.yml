@@ -5,6 +5,12 @@ on:
     - cron: '0 */4 * * *'
   workflow_dispatch:
 
+# Serialize against pg-reinstall (and any other run sharing this group) so a
+# backup never runs against a cluster that is mid-reinstall.
+concurrency:
+  group: postgres-mikr-us-k122
+  cancel-in-progress: false
+
 jobs:
   pg-backup:
     runs-on: ubuntu-latest

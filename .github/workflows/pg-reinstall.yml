@@ -5,9 +5,17 @@ on:
     - cron: '0 5 * * 6'
   workflow_dispatch:
 
+# Serialize against pg-backup (shared group) so the two never overlap on the VPS.
+concurrency:
+  group: postgres-mikr-us-k122
+  cancel-in-progress: false
+
 jobs:
   pg-reinstall:
     runs-on: ubuntu-latest
+    # Normal runs take ~12 min; cap runaway hangs (observed up to 6h) so a stuck
+    # reinstall can't straddle multiple backup windows.
+    timeout-minutes: 30
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
