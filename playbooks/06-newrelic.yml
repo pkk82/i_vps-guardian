@@ -12,17 +12,10 @@
           - newrelic_license_key | length > 0
         fail_msg: "newrelic_license_key is not set — add it to group_vars/all.yml (vault)."
 
-    - name: Ensure apt keyrings directory exists
-      ansible.builtin.file:
-        path: /etc/apt/keyrings
-        state: directory
-        mode: '0755'
-
-    - name: Download New Relic apt signing key
-      ansible.builtin.get_url:
+    - name: Import the repository signing key
+      ansible.builtin.apt_key:
         url: https://download.newrelic.com/infrastructure_agent/gpg/newrelic-infra.gpg
-        dest: /etc/apt/keyrings/newrelic-infra.gpg
-        mode: '0644'
+        state: present
 
     - name: Work out the distribution
       command: lsb_release -sc
@@ -30,7 +23,7 @@
 
     - name: Add New Relic apt repository
       ansible.builtin.apt_repository:
-        repo: "deb [signed-by=/etc/apt/keyrings/newrelic-infra.gpg] https://download.newrelic.com/infrastructure_agent/linux/apt {{distribution.stdout}} main"
+        repo: "deb https://download.newrelic.com/infrastructure_agent/linux/apt {{distribution.stdout}} main"
         state: present
         filename: newrelic-infra
 
