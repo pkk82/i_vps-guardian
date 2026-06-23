@@ -1,0 +1,19 @@
+# Managed by Ansible (vps-guardian) — PostgreSQL metrics.
+# Connects locally over TLS (the cluster requires hostssl) using the read-only
+# `newrelic` monitoring role granted pg_monitor.
+integrations:
+  - name: nri-postgresql
+    env:
+      HOSTNAME: localhost
+      PORT: {{ pg_port }}
+      USERNAME: newrelic
+      PASSWORD: {{ newrelic_pg_password }}
+      DATABASE: postgres
+      ENABLE_SSL: true
+      TRUST_SERVER_CERTIFICATE: true
+      COLLECTION_LIST: 'ALL'
+      COLLECT_DB_LOCK_METRICS: true
+    interval: 30s
+    labels:
+      env: production
+      role: postgresql

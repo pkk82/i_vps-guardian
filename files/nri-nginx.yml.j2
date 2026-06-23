@@ -1,0 +1,12 @@
+# Managed by Ansible (vps-guardian) — Nginx metrics via stub_status.
+# Reads the local-only status endpoint published by the newrelic-status site.
+integrations:
+  - name: nri-nginx
+    env:
+      STATUS_URL: http://127.0.0.1:8889/nginx_status
+      STATUS_MODULE: discover
+      REMOTE_MONITORING: true
+    interval: 30s
+    labels:
+      env: production
+      role: nginx

@@ -54,6 +54,20 @@
         state: link
         force: yes
 
+
+    - name: Render status.conf
+      ansible.builtin.template:
+        src: "{{inventory_dir}}/files/nginx-status.conf.j2"
+        dest: "/etc/nginx/sites-available/status"
+        mode: '0440'
+
+    - name: Create a symbolic link to the status.conf file
+      ansible.builtin.file:
+        src: "/etc/nginx/sites-available/status"
+        dest: "/etc/nginx/sites-enabled/status"
+        state: link
+        force: yes
+
     - name: Restart nginx
       service:
         name: nginx

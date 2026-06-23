@@ -3,4 +3,5 @@
 - import_playbook: "{{playbook_dir}}/01-access.yml"
 - import_playbook: "{{playbook_dir}}/03-nginx.yml"
 - import_playbook: "{{playbook_dir}}/02-pg-install.yml"
+- import_playbook: "{{playbook_dir}}/06-newrelic.yml"
 

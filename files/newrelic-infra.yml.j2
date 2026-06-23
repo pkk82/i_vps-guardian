@@ -1,0 +1,13 @@
+# Managed by Ansible (vps-guardian) — do not edit by hand.
+# The infrastructure agent auto-detects the New Relic region (US/EU) from the
+# license key, so no explicit region setting is needed here.
+license_key: {{ newrelic_license_key }}
+display_name: {{ inventory_hostname }}
+
+# Report per-process metrics (CPU/memory/IO per process). Useful on a single
+# VPS; comment out to reduce overhead.
+enable_process_metrics: true
+
+custom_attributes:
+  environment: production
+  managed_by: vps-guardian

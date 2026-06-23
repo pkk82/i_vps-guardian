@@ -1,0 +1,29 @@
+name: Install New Relic in VPS
+
+on: workflow_dispatch
+
+# Serialize against pg-reinstall/backup (shared group) so the monitoring user is
+# never created against a cluster that is mid-reinstall.
+concurrency:
+  group: postgres-mikr-us-k122
+  cancel-in-progress: false
+
+jobs:
+   newrelic:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Run Ansible playbook
+        uses: ./.github/actions/ansible
+        with:
+          vault_pass_mikr_us_k122: ${{ secrets.VAULT_PASS_MIKR_US_K122 }}
+          vault_pass_all: ${{ secrets.VAULT_PASS_ALL }}
+          playbook: ./playbooks/06-newrelic.yml

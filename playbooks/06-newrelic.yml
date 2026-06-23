@@ -1,0 +1,119 @@
+---
+- hosts: remotes
+  remote_user: "{{ansible_ssh_user}}"
+  become: true
+  gather_facts: no
+  tasks:
+
+    - name: Assert New Relic license key is provided
+      ansible.builtin.assert:
+        that:
+          - newrelic_license_key is defined
+          - newrelic_license_key | length > 0
+        fail_msg: "newrelic_license_key is not set — add it to group_vars/all.yml (vault)."
+
+    - name: Ensure apt keyrings directory exists
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Download New Relic apt signing key
+      ansible.builtin.get_url:
+        url: https://download.newrelic.com/infrastructure_agent/gpg/newrelic-infra.gpg
+        dest: /etc/apt/keyrings/newrelic-infra.gpg
+        mode: '0644'
+
+    - name: Work out the distribution
+      command: lsb_release -sc
+      register: distribution
+
+    - name: Add New Relic apt repository
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/newrelic-infra.gpg] https://download.newrelic.com/infrastructure_agent/linux/apt {{distribution.stdout}} main"
+        state: present
+        filename: newrelic-infra
+
+    - name: Install New Relic infrastructure agent and integrations
+      ansible.builtin.apt:
+        name:
+          - newrelic-infra
+          - nri-nginx
+          - nri-postgresql
+        update_cache: yes
+
+    - name: Create New Relic PostgreSQL monitoring user
+      community.postgresql.postgresql_user:
+        name: newrelic
+        password: "{{newrelic_pg_password}}"
+        role_attr_flags: NOSUPERUSER,NOCREATEROLE,NOCREATEDB
+        port: "{{pg_port}}"
+      become_user: postgres
+
+    - name: Grant "pg_monitor" role to the New Relic user
+      community.postgresql.postgresql_membership:
+        group: pg_monitor
+        target_roles:
+          - newrelic
+        state: present
+        port: "{{pg_port}}"
+      become_user: postgres
+
+    - name: Render agent configuration
+      ansible.builtin.template:
+        src: "{{inventory_dir}}/files/newrelic-infra.yml.j2"
+        dest: /etc/newrelic-infra.yml
+        mode: '0640'
+      notify: restart newrelic-infra
+
+    - name: Ensure logging.d directory exists
+      ansible.builtin.file:
+        path: /etc/newrelic-infra/logging.d
+        state: directory
+        mode: '0755'
+
+    - name: Render log forwarding configuration
+      ansible.builtin.template:
+        src: "{{inventory_dir}}/files/newrelic-logging.yml.j2"
+        dest: /etc/newrelic-infra/logging.d/logs.yml
+        mode: '0644'
+      notify: restart newrelic-infra
+
+    - name: Ensure integrations.d directory exists
+      ansible.builtin.file:
+        path: /etc/newrelic-infra/integrations.d
+        state: directory
+        mode: '0755'
+
+    - name: Render Docker integration configuration
+      ansible.builtin.template:
+        src: "{{inventory_dir}}/files/nri-docker.yml.j2"
+        dest: /etc/newrelic-infra/integrations.d/docker-config.yml
+        mode: '0644'
+      notify: restart newrelic-infra
+
+    - name: Render Nginx integration configuration
+      ansible.builtin.template:
+        src: "{{inventory_dir}}/files/nri-nginx.yml.j2"
+        dest: /etc/newrelic-infra/integrations.d/nginx-config.yml
+        mode: '0644'
+      notify: restart newrelic-infra
+
+    - name: Render PostgreSQL integration configuration
+      ansible.builtin.template:
+        src: "{{inventory_dir}}/files/nri-postgresql.yml.j2"
+        dest: /etc/newrelic-infra/integrations.d/postgresql-config.yml
+        mode: '0640'
+      notify: restart newrelic-infra
+
+    - name: Ensure newrelic-infra is enabled and started
+      ansible.builtin.service:
+        name: newrelic-infra
+        state: started
+        enabled: true
+
+  handlers:
+    - name: restart newrelic-infra
+      ansible.builtin.service:
+        name: newrelic-infra
+        state: restarted

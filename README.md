@@ -51,6 +51,8 @@ ansible-vault edit --vault-id all@prompt ./group_vars/all.yml
 * docker_registry_url
 * docker_registry_username
 * docker_registry_password
+* newrelic_license_key
+* newrelic_pg_password
 
 and PostgreSQL user passwords
 

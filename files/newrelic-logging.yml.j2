@@ -1,0 +1,23 @@
+# Managed by Ansible (vps-guardian) — forwards host logs to New Relic Logs.
+# The agent's bundled Fluent Bit tails these files.
+logs:
+  - name: syslog
+    file: /var/log/syslog
+
+  - name: auth
+    file: /var/log/auth.log
+
+  - name: nginx-access
+    file: /var/log/nginx/access.log
+    attributes:
+      logtype: nginx
+
+  - name: nginx-error
+    file: /var/log/nginx/error.log
+    attributes:
+      logtype: nginx-error
+
+  - name: postgresql
+    file: /var/log/postgresql/postgresql-*.log
+    attributes:
+      logtype: postgresql
