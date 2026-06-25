@@ -1,10 +1,12 @@
 # Managed by Ansible (vps-guardian) — Docker container metrics.
-# nri-docker ships bundled with the infrastructure agent; it activates only
-# when the Docker daemon socket is present.
+# nri-docker ships bundled with the infrastructure agent. We gate only on the
+# Docker socket existing, NOT on the agent's `feature: docker_enabled` flag:
+# that feature is set by the agent's own Docker auto-detection, which does not
+# reliably fire on this host, leaving the integration silently disabled even
+# while containers are running. file_exists is the dependable trigger.
 integrations:
   - name: nri-docker
     when:
-      feature: docker_enabled
       file_exists: /var/run/docker.sock
     interval: 30s
     labels:
