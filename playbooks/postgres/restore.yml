@@ -29,7 +29,7 @@
       ansible.builtin.shell: |
         set -o pipefail
         if [ -n "{{ pg_reinstall_backup_basename | default('') }}" ]; then
-          echo "{{ pg_reinstall_backup_basename }}"
+          echo "{{ pg_reinstall_backup_basename | default('') }}"
         else
           python3 ~/dropbox_script.py list | grep "pg-backup.*\.gz$" | sort | tail -n 1
         fi
